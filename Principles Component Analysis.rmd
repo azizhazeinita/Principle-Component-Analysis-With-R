@@ -1,0 +1,104 @@
+'
+Data Mining Principles | Assignment 2
+Azizha Zeinita | 12334537
+'
+
+```{r}
+library(ggplot2) 
+library(MASS)
+library(poLCA)
+
+BostonData <- Boston
+```
+
+### --- Step 1 --- ###
+# 1.1. Split samples into two random samples of sizes 70% and 30%.
+```{r}
+crim=BostonData[,1]
+rm=BostonData[,6]
+age=BostonData[,7]
+dis=BostonData[,8]
+lstat=BostonData[,13]
+medv=BostonData[,14]
+df <- data.frame(crim,rm,age,dis,lstat,medv)
+
+X<- sample(c(rep(0, 0.7 * nrow(df)), rep(1, 0.3 * nrow(df))))
+table(X)
+train <- df[X == 0, ]  
+test <- df[X== 1, ] 
+```
+
+### --- Step 2 --- ###
+# 2.1. Standardize your data so that each variable has mean = 0 and variance = 1
+# 2.2. Scale the test set using the mean and standard deviation of the training set. 
+```{r}
+X.train.mean = colMeans(train)
+X.train.sd   = sapply(train, sd)
+X.train.scale  = scale(train, center=X.train.mean, scale=X.train.sd)
+X.test.scale   = scale(test, center=X.train.mean, scale=X.train.sd) #scaling test by train parameters
+```
+
+# 3. Perform PCA on the train data. Use princomp (R) and PCA (Python) function.
+```{r}
+pc.train <- prcomp(X.train.scale)
+```
+
+### --- Step 3 --- ###
+# 3.1. Display cumulative sum of variance accounted for (cumulative proportion) by each additional PCA factor.
+```{r}
+plot (pc.train, type='l')
+summary(pc.train)
+```
+
+# 3.2. Apply the "elbow rule" to decide how many components you'd like to include.
+'Selected number of component: 2'
+
+
+### --- Step 4 --- ###
+# 4.1. Plot loading 1 against all of the other loadings (6 pairwise comparisons). 
+#biplot(pc.train[,c(1,2)])
+```{r}
+biplot(pc.train$x, pc.train$rotation)
+```
+
+'Interpretation is documented in PDF document'
+
+# 4.2.1. Show that Component loadings are orthogonal.
+```{r}
+round(cor(t(pc.train$rotation) %*% pc.train$rotation))
+```
+
+# 4.2.2. Show that Component scores are orthogonal.
+```{r}
+round(cor(t(pc.train$x) %*% pc.train$x))
+```
+
+# 4.2.3.1. predict the component scores in the Test using the predict() function in R and transform function in Python
+```{r}
+pc.test.predict <- predict(pc.train, newdata = X.test.scale)
+```
+
+# 4.2.3.2. matrix multiply the predicted component scores from (1) above with transpose of component loadings you derived from training data set from Step 2 above.
+```{r}
+matrix.multiply <- pc.test.predict[,1:2] %*% t(pc.train$rotation)[1:2,]
+```
+
+# 4.2.3.3. Compute the Variance Account For (R2) in the Test sample. That yields a measure of Test performance. 
+```{r}
+VAF_train <- round(cor(as.vector(X.train.scale), as.vector(pc.train$x[,1:2] %*% t(pc.train$rotation)[1:2,])),2)^2
+VAF_test <- round(cor(as.vector(X.test.scale), as.vector(matrix.multiply)),2)^2
+VAF_train
+VAF_test
+```
+
+#Rotating Principal Components Solutions using varimax() in R
+```{r}
+x=prcomp(df,scale=TRUE)
+summary(x)
+cor(as.vector(scale(df)), as.vector(x$x[,1:2]  %*% t(x$rotation)[1:2,]))^2
+y=varimax(x$rotation[,1:2])
+y
+cor(as.vector(scale(df)), as.vector(x$x[,1:2] %*% y$rotmat %*% t(y$rotmat) %*% t(x$rotation)[1:2,]))^2
+```
+
+

@@ -1,1 +1,1 @@
-# Latent-Class-Analysis-With-R
+# Principle-Component-Analysis-With-R
